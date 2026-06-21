@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "745107184818",
-    "project_id": "nightingalehospitalapp",
-    "storage_bucket": "nightingalehospitalapp.firebasestorage.app"
+    "project_number": "963622897103",
+    "project_id": "nightingalehospitalapp-68ce2",
+    "storage_bucket": "nightingalehospitalapp-68ce2.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:745107184818:android:bb8830ed18680583803dab",
+        "mobilesdk_app_id": "1:963622897103:android:1f593183ac08a1d2217eba",
         "android_client_info": {
           "package_name": "com.example.nightingalehospitalapp"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDbYC7zn5wbXvkgwfrLw3d_athiy9qQ73Y"
+          "current_key": "AIzaSyCoHCM0AUP_lhQAUC_OIjo7cGBhXT6i1W4"
         }
       ],
       "services": {
