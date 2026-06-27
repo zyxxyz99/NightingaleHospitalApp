@@ -3,7 +3,6 @@ package com.example.nightingalehospitalapp.repository.auth
 import com.example.nightingalehospitalapp.database.FirebaseConfig
 import com.example.nightingalehospitalapp.models.user.User
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.*
 
 class AuthRepository {
 
@@ -16,36 +15,26 @@ class AuthRepository {
         password: String,
         onResult: (Boolean, String?) -> Unit
     ) {
-
         auth.createUserWithEmailAndPassword(user.email, password)
             .addOnSuccessListener {
-
-                val uid = auth.currentUser?.uid
-                    ?: return@addOnSuccessListener
-
-                val approvedStatus =
-                    if (user.role == "DOCTOR") false else true
-
+                val uid = auth.currentUser?.uid ?: return@addOnSuccessListener
+                val approvedStatus = if (user.role == "DOCTOR") false else true
                 val updatedUser = user.copy(
                     userId = uid,
                     approved = approvedStatus
                 )
 
-                FirebaseConfig.usersRef.child(uid)
-                    .setValue(updatedUser)
+                FirebaseConfig.usersRef.document(uid)
+                    .set(updatedUser)
                     .addOnSuccessListener {
-
                         onResult(true, null)
-
                     }
                     .addOnFailureListener {
                         onResult(false, it.message)
                     }
             }
             .addOnFailureListener {
-
                 onResult(false, it.message)
-
             }
     }
 
@@ -56,50 +45,35 @@ class AuthRepository {
         password: String,
         onResult: (String?, String?) -> Unit
     ) {
-
         auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener {
-
                 val uid = auth.currentUser?.uid ?: return@addOnSuccessListener
 
-                FirebaseConfig.usersRef.child(uid)
-                    .addListenerForSingleValueEvent(object : ValueEventListener {
-
-                        override fun onDataChange(snapshot: DataSnapshot) {
-
-                            if (!snapshot.exists()) {
-                                auth.signOut()
-                                onResult(null, "User profile not found")
-                                return
-                            }
-
-                            val role =
-                                snapshot.child("role").getValue(String::class.java)
-
-                            val approved =
-                                snapshot.child("approved").getValue(Boolean::class.java)
-
-                            if (role == "DOCTOR" && approved == false) {
-
-                                auth.signOut()
-                                onResult(null, "Doctor not approved yet")
-                                return
-                            }
-
-                            onResult(role, null)
+                FirebaseConfig.usersRef.document(uid).get()
+                    .addOnSuccessListener { document ->
+                        if (!document.exists()) {
+                            auth.signOut()
+                            onResult(null, "User profile not found")
+                            return@addOnSuccessListener
                         }
 
-                        override fun onCancelled(error: DatabaseError) {
+                        val role = document.getString("role")
+                        val approved = document.getBoolean("approved")
 
-                            onResult(null, error.message)
-
+                        if (role == "DOCTOR" && approved == false) {
+                            auth.signOut()
+                            onResult(null, "Doctor not approved yet")
+                            return@addOnSuccessListener
                         }
-                    })
+
+                        onResult(role, null)
+                    }
+                    .addOnFailureListener {
+                        onResult(null, it.message)
+                    }
             }
             .addOnFailureListener {
-
                 onResult(null, it.message)
-
             }
     }
 
@@ -112,31 +86,28 @@ class AuthRepository {
             return
         }
 
-        FirebaseConfig.usersRef.child(uid)
-            .addListenerForSingleValueEvent(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (!snapshot.exists()) {
-                        auth.signOut()
-                        onResult(null, "User profile not found")
-                        return
-                    }
-
-                    val role = snapshot.child("role").getValue(String::class.java)
-                    val approved = snapshot.child("approved").getValue(Boolean::class.java)
-
-                    if (role == "DOCTOR" && approved == false) {
-                        auth.signOut()
-                        onResult(null, "Doctor not approved yet")
-                        return
-                    }
-
-                    onResult(role, null)
+        FirebaseConfig.usersRef.document(uid).get()
+            .addOnSuccessListener { document ->
+                if (!document.exists()) {
+                    auth.signOut()
+                    onResult(null, "User profile not found")
+                    return@addOnSuccessListener
                 }
 
-                override fun onCancelled(error: DatabaseError) {
-                    onResult(null, error.message)
+                val role = document.getString("role")
+                val approved = document.getBoolean("approved")
+
+                if (role == "DOCTOR" && approved == false) {
+                    auth.signOut()
+                    onResult(null, "Doctor not approved yet")
+                    return@addOnSuccessListener
                 }
-            })
+
+                onResult(role, null)
+            }
+            .addOnFailureListener {
+                onResult(null, it.message)
+            }
     }
 
     /* ------------------ LOGOUT ------------------ */
