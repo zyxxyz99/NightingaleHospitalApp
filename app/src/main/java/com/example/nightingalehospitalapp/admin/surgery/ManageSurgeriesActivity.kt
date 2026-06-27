@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -28,11 +29,13 @@ import com.example.nightingalehospitalapp.viewmodel.admin.surgery.SurgeryBooking
  * Lists surgery bookings.
  *
  * • Default (admin) call — no extras — shows every booking in the system
- *   and exposes the per-card status dropdown so admins can move surgeries
- *   through BOOKED / COMPLETED / CANCELLED.
+ *   and exposes the per-card status dropdown plus a FAB to schedule new
+ *   surgeries.
  *
- * • `EXTRA_DOCTOR_ID` set — list is filtered to that doctor's surgeries
- *   and the status dropdown is hidden (read-only view for the doctor).
+ * • `EXTRA_DOCTOR_ID` set — list is filtered to that doctor's surgeries.
+ *   The doctor can update the status of their own surgeries but the FAB
+ *   (and the Schedule Surgery navigation) is hidden so they cannot add
+ *   new ones.
  */
 class ManageSurgeriesActivity : ComponentActivity() {
 
@@ -46,17 +49,16 @@ class ManageSurgeriesActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // If launched by a doctor, bind the VM to that doctor's scope once.
+        // bindDoctor() also flips [isDoctorScope], which the screen collects
+        // reactively so the FAB / title recompose as soon as scope is bound.
         intent?.getStringExtra(EXTRA_DOCTOR_ID)?.let { doctorId ->
             if (doctorId.isNotBlank()) viewModel.bindDoctor(doctorId)
         }
-
-        val isDoctorScope = viewModel.isDoctorScope.value
 
         setContent {
             NightingaleHospitalAppTheme {
                 ManageSurgeriesScreen(
                     viewModel = viewModel,
-                    isDoctorScope = isDoctorScope,
                     onNavigateBack = { finish() },
                     onNavigateToSchedule = {
                         startActivity(Intent(this, ScheduleSurgeryActivity::class.java))
@@ -76,13 +78,15 @@ class ManageSurgeriesActivity : ComponentActivity() {
 @Composable
 fun ManageSurgeriesScreen(
     viewModel: ManageSurgeriesViewModel,
-    isDoctorScope: Boolean,
     onNavigateBack: () -> Unit,
     onNavigateToSchedule: () -> Unit
 ) {
     val surgeries by viewModel.surgeries.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val errorMessage by viewModel.errorMessage.collectAsState()
+    // Collected reactively so the FAB / title recompose when bindDoctor()
+    // flips scope (doctors arrive via intent extra after onCreate).
+    val isDoctorScope by viewModel.isDoctorScope.collectAsState()
     val context = LocalContext.current
 
     LaunchedEffect(errorMessage) {
@@ -145,7 +149,7 @@ fun ManageSurgeriesScreen(
                     items(surgeries) { surgery ->
                         SurgeryCard(
                             surgery = surgery,
-                            showStatusEditor = !isDoctorScope,
+                            showStatusEditor = true,
                             onStatusChange = { newStatus ->
                                 viewModel.updateSurgeryStatus(
                                     surgery.surgeryId, newStatus, surgery.otId
@@ -202,12 +206,10 @@ fun SurgeryCard(
             Text(text = "Date: ${surgery.date} (${surgery.startTime} - ${surgery.endTime})")
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Read-only status badge (shown to doctors).
-            AssistChip(
-                onClick = {},
-                label = { Text(surgery.status.name) }
-            )
-
+            // Surgeries persist in the scheduled list regardless of status —
+            // they only truly "leave" once the doctor marks them CANCELLED.
+            // The dropdown is the single status control; a separate badge would
+            // duplicate its label and obscure whether the status is editable.
             if (showStatusEditor) {
                 Spacer(modifier = Modifier.height(16.dp))
                 ExposedDropdownMenuBox(

@@ -11,6 +11,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -29,10 +30,14 @@ data class SurgeryBookingItem(
 
 /**
  * Surfaces every surgery in the system (admin view) or just the surgeries
- * assigned to a specific doctor (read-only doctor view).
+ * assigned to a specific doctor (doctor view).
  *
  * Pass [doctorId] in the constructor / via [bindDoctor] to restrict the list.
- * While a [doctorId] is bound, status-change actions are disabled.
+ * Both admins and doctors may transition a surgery's status; the FAB that
+ * schedules new surgeries is hidden in doctor scope (see [isDoctorScope]).
+ * Surgeries persist in the list across status changes — only a CANCELLED
+ * transition is the "this surgery is no longer happening" signal in the
+ * doctor's dashboard.
  */
 class ManageSurgeriesViewModel(
     initialDoctorId: String? = null
@@ -42,9 +47,13 @@ class ManageSurgeriesViewModel(
 
     private val _doctorId = MutableStateFlow(initialDoctorId?.takeIf { it.isNotBlank() })
 
-    /** True when the VM is being driven by a doctor (read-only view). */
-    val isDoctorScope: StateFlow<Boolean> = _doctorId
-        .let { MutableStateFlow(it.value != null) }
+    /** True when the VM is being driven by a doctor's dashboard view. */
+    // Backing flow for [isDoctorScope]. Doctors arrive with no constructor
+    // arg and bind later via [bindDoctor]; without this second flow, the
+    // activity would never see the scope flip and would keep showing the
+    // "+" FAB to doctors.
+    private val _isDoctorScope = MutableStateFlow(_doctorId.value != null)
+    val isDoctorScope: StateFlow<Boolean> = _isDoctorScope.asStateFlow()
 
     private val _surgeries = MutableStateFlow<List<SurgeryBookingItem>>(emptyList())
     val surgeries: StateFlow<List<SurgeryBookingItem>> = _surgeries
@@ -61,12 +70,17 @@ class ManageSurgeriesViewModel(
 
     /**
      * Bind the VM to a single doctor's view. Subsequent fetches will only
-     * return surgeries where `doctorId == [doctorId]`. Status-change actions
-     * become no-ops.
+     * return surgeries where `doctorId == [doctorId]`. Status transitions
+     * remain enabled — the doctor can mark their own surgeries as
+     * COMPLETED or CANCELLED.
      */
     fun bindDoctor(doctorId: String) {
         if (doctorId.isBlank()) return
         _doctorId.value = doctorId
+        // Flip scope so the screen recomposes with the FAB hidden / title
+        // flipped. Without this, doctors bound from an intent extra would
+        // still see the admin layout.
+        _isDoctorScope.value = true
         fetchSurgeries()
     }
 
@@ -153,8 +167,16 @@ class ManageSurgeriesViewModel(
     }
 
     /**
-     * Status updates are admin-only. While a doctor scope is bound this is a
-     * no-op that reports a friendly error so the UI can ignore it.
+     * Updates the status of a surgery. Both admins and doctors can call this —
+     * `EXTRA_DOCTOR_ID` only restricts which rows are listed, not who can
+     * transition their status.
+     *
+     * The row is updated in place in [_surgeries] (no Firestore re-read) so
+     * the card reflects the new status instantly and never disappears from
+     * the list — only the [SurgeryStatus] field on the underlying doc is
+     * touched, never the doc itself. The associated operation theatre is
+     * freed on both COMPLETED and CANCELLED so the room is reusable after
+     * the scheduled day.
      */
     fun updateSurgeryStatus(
         surgeryId: String,
@@ -162,23 +184,29 @@ class ManageSurgeriesViewModel(
         otId: String,
         onResult: (Boolean, String?) -> Unit
     ) {
-        if (_doctorId.value != null) {
-            onResult(false, "Only admins can update surgery status")
-            return
-        }
-
         surgeryRepository.updateSurgeryStatus(surgeryId, newStatus) { success, error ->
             if (!success) {
                 onResult(false, error ?: "Failed to update surgery status")
                 return@updateSurgeryStatus
             }
 
-            // Release the OT back to AVAILABLE when the surgery is finished or cancelled.
+            // Reflect the new status in the in-memory list immediately so the
+            // card does not flicker / vanish while the OT-release (and any
+            // subsequent cross-device sync) is processed. A re-fetch would
+            // route the screen through the loading spinner branch and the
+            // user would see the row disappear until the snapshot landed;
+            // instead we mutate the matching item in place.
+            _surgeries.value = _surgeries.value.map { item ->
+                if (item.surgeryId == surgeryId) item.copy(status = newStatus) else item
+            }
+
+            // Release the OT back to AVAILABLE when the surgery is finished
+            // or cancelled. Runs in the background — its outcome does not
+            // affect the surgery row, only the OT's availability flag.
             val shouldFreeOt = newStatus == SurgeryStatus.COMPLETED ||
                 newStatus == SurgeryStatus.CANCELLED
             if (shouldFreeOt && otId.isNotBlank()) {
                 surgeryRepository.updateOperationTheatreStatus(otId, "AVAILABLE") { otOk, otErr ->
-                    fetchSurgeries()
                     if (otOk) {
                         onResult(true, null)
                     } else {
@@ -186,7 +214,6 @@ class ManageSurgeriesViewModel(
                     }
                 }
             } else {
-                fetchSurgeries()
                 onResult(true, null)
             }
         }
