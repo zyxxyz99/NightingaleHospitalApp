@@ -56,6 +56,9 @@
             android:name=".doctor.ManageSlotsActivity"
             android:exported="false" />
         <activity
+            android:name=".patient.MyAppointmentsActivity"
+            android:exported="false" />
+        <activity
             android:name=".activities.ProfileActivity"
             android:exported="false" />
     </application>

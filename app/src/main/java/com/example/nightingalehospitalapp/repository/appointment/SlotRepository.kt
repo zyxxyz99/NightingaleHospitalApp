@@ -99,6 +99,24 @@ class SlotRepository(
         }
     }
 
+    suspend fun freeSlot(slotId: String): Result<Unit> {
+        return try {
+            db.collection("slots")
+                .document(slotId)
+                .update(
+                    mapOf(
+                        "booked" to false,
+                        "patientId" to "",
+                        "patientName" to ""
+                    )
+                )
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
     // Helper function to insert demo slots
     suspend fun seedDemoSlotsIfEmpty(doctorId: String, date: String) {
         try {

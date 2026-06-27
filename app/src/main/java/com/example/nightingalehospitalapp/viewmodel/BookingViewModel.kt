@@ -19,6 +19,11 @@ class BookingViewModel : ViewModel() {
     private val slotRepository = SlotRepository()
     private val appointmentRepository = AppointmentRepository()
 
+    private val _allDoctors = MutableStateFlow<List<DoctorWithUser>>(emptyList())
+    
+    private val _selectedDepartment = MutableStateFlow<String>("All")
+    val selectedDepartment: StateFlow<String> = _selectedDepartment.asStateFlow()
+
     private val _doctors = MutableStateFlow<List<DoctorWithUser>>(emptyList())
     val doctors: StateFlow<List<DoctorWithUser>> = _doctors.asStateFlow()
 
@@ -30,7 +35,25 @@ class BookingViewModel : ViewModel() {
 
     fun fetchDoctors() {
         viewModelScope.launch {
-            _doctors.value = doctorRepository.getDoctorsWithDetails()
+            val list = doctorRepository.getDoctorsWithDetails()
+            _allDoctors.value = list
+            applyFilter()
+        }
+    }
+
+    fun setDepartmentFilter(department: String) {
+        _selectedDepartment.value = department
+        applyFilter()
+    }
+
+    private fun applyFilter() {
+        val currentDept = _selectedDepartment.value
+        if (currentDept == "All") {
+            _doctors.value = _allDoctors.value
+        } else {
+            _doctors.value = _allDoctors.value.filter {
+                it.doctor.specialization.equals(currentDept, ignoreCase = true)
+            }
         }
     }
 

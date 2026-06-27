@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class AppointmentViewModel : ViewModel() {
 
@@ -84,6 +85,32 @@ class AppointmentViewModel : ViewModel() {
                 onSuccess = { "Status updated to ${newStatus.name}" },
                 onFailure = { it.message ?: "Update failed" }
             )
+        }
+    }
+
+    fun cancelAppointmentFromSlot(slotId: String, patientId: String, doctorId: String, date: String, time: String) {
+        viewModelScope.launch {
+            val slotResult = slotRepository.freeSlot(slotId)
+            if (slotResult.isSuccess) {
+                try {
+                    val snapshot = com.google.firebase.firestore.FirebaseFirestore.getInstance()
+                        .collection("appointments")
+                        .whereEqualTo("patientId", patientId)
+                        .whereEqualTo("doctorId", doctorId)
+                        .whereEqualTo("date", date)
+                        .whereEqualTo("time", time)
+                        .get()
+                        .await()
+                    for (doc in snapshot.documents) {
+                        repository.updateStatus(doc.id, AppointmentStatus.CANCELLED)
+                    }
+                    _updateResult.value = "Appointment cancelled"
+                } catch (e: Exception) {
+                    _updateResult.value = "Slot freed, but failed to update appointment status."
+                }
+            } else {
+                _updateResult.value = "Failed to free slot"
+            }
         }
     }
 

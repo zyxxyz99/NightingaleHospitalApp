@@ -52,6 +52,9 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
 
     var selectedDoctor by remember { mutableStateOf<DoctorWithUser?>(null) }
     
+    val selectedDepartment by viewModel.selectedDepartment.collectAsState()
+    val departments = listOf("All", "General", "Cardiology", "Neurology", "Orthopedics")
+
     val dateFormatter = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     var selectedDate by remember { mutableStateOf(dateFormatter.format(Date())) }
     
@@ -105,7 +108,23 @@ fun BookAppointmentScreen(viewModel: BookingViewModel, onBack: () -> Unit) {
         ) {
             if (selectedDoctor == null) {
                 Text("Select a Doctor", style = MaterialTheme.typography.titleLarge)
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                // Department Filter
+                androidx.compose.foundation.lazy.LazyRow(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(departments) { dept ->
+                        FilterChip(
+                            selected = selectedDepartment == dept,
+                            onClick = { viewModel.setDepartmentFilter(dept) },
+                            label = { Text(dept) }
+                        )
+                    }
+                }
                 Spacer(modifier = Modifier.height(16.dp))
+                
                 LazyColumn {
                     items(doctors) { doctorWithUser ->
                         Card(

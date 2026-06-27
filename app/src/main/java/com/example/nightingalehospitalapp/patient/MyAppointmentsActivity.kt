@@ -96,6 +96,23 @@ fun MyAppointmentsScreen(viewModel: AppointmentViewModel, onBack: () -> Unit) {
                                         if (appointment.notes.isNotEmpty()) {
                                             Text("Notes: ${appointment.notes}")
                                         }
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        if (appointment.status != com.example.nightingalehospitalapp.models.enums.AppointmentStatus.CANCELLED && appointment.status != com.example.nightingalehospitalapp.models.enums.AppointmentStatus.COMPLETED) {
+                                            Button(
+                                                onClick = {
+                                                    viewModel.cancelAppointmentFromSlot(
+                                                        slotId = appointment.appointmentId,
+                                                        patientId = appointment.patientId,
+                                                        doctorId = appointment.doctorId,
+                                                        date = appointment.date,
+                                                        time = appointment.time
+                                                    )
+                                                },
+                                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
+                                            ) {
+                                                Text("Cancel Appointment")
+                                            }
+                                        }
                                     }
                                 }
                             }
