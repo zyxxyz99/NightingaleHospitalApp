@@ -15,7 +15,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -147,10 +146,6 @@ fun DoctorDashboardScreen() {
                 DashboardItem(
                     title = "Schedule Surgery",
                     icon = Icons.Filled.DateRange
-                ),
-                DashboardItem(
-                    title = "View Test Results",
-                    icon = Icons.Filled.Info
                 )
             )
 
