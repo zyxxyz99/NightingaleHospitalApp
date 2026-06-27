@@ -44,6 +44,22 @@ class DoctorRepository {
             result
         } catch (e: Exception) {
             emptyList()
+    fun updateDoctor(doctor: Doctor) {
+        FirebaseConfig.doctorsRef.document(doctor.doctorId).set(doctor)
+        if (doctor.isApproved) {
+            FirebaseConfig.usersRef.document(doctor.userId).update("approved", true)
+        }
+    }
+
+    fun removeDoctor(doctorId: String) {
+        FirebaseConfig.doctorsRef.document(doctorId).get().addOnSuccessListener { document ->
+            val userId = document.getString("userId")
+            if (userId != null) {
+                FirebaseConfig.usersRef.document(userId).delete()
+            }
+            FirebaseConfig.doctorsRef.document(doctorId).delete()
+        }.addOnFailureListener {
+            FirebaseConfig.doctorsRef.document(doctorId).delete()
         }
     }
 }
