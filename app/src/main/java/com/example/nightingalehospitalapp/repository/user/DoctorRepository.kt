@@ -7,13 +7,13 @@ class DoctorRepository {
 
     fun addDoctor(doctor: Doctor) {
 
-        val id = FirebaseConfig.doctorsRef.push().key
+        val id = FirebaseConfig.doctorsRef.document().id
             ?: throw Exception("Failed to generate doctor ID")
 
         val updatedDoctor = doctor.copy(doctorId = id)
 
         FirebaseConfig.doctorsRef
-            .child(id)
-            .setValue(updatedDoctor)
+            .document(id)
+            .set(updatedDoctor)
     }
 }

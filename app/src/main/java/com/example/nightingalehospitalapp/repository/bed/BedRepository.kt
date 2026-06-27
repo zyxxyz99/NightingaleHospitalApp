@@ -7,13 +7,13 @@ class BedRepository {
 
     fun addBed(bed: Bed) {
 
-        val id = FirebaseConfig.bedsRef.push().key
+        val id = FirebaseConfig.bedsRef.document().id
             ?: throw Exception("Failed to generate bed ID")
 
         val updatedBed = bed.copy(bedId = id)
 
         FirebaseConfig.bedsRef
-            .child(id)
-            .setValue(updatedBed)
+            .document(id)
+            .set(updatedBed)
     }
 }

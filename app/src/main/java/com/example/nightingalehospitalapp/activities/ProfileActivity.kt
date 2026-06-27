@@ -18,9 +18,6 @@ import androidx.compose.ui.unit.dp
 import com.example.nightingalehospitalapp.database.FirebaseConfig
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
 
 class ProfileActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -48,19 +45,16 @@ fun ProfileScreen(onBackClick: () -> Unit) {
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
             email = currentUser.email ?: "Unknown Email"
-            FirebaseConfig.usersRef.child(currentUser.uid)
-                .addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                            name = snapshot.child("name").getValue(String::class.java) ?: "Unknown Name"
-                            role = snapshot.child("role").getValue(String::class.java) ?: "Unknown Role"
-                        }
+            FirebaseConfig.usersRef.document(currentUser.uid).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        name = document.getString("name") ?: "Unknown Name"
+                        role = document.getString("role") ?: "Unknown Role"
                     }
-
-                    override fun onCancelled(error: DatabaseError) {
-                        Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
-                    }
-                })
+                }
+                .addOnFailureListener { error ->
+                    Toast.makeText(context, error.message, Toast.LENGTH_SHORT).show()
+                }
         }
     }
 

@@ -1,41 +1,38 @@
 package com.example.nightingalehospitalapp.database
 
-import com.google.firebase.database.DatabaseReference
-import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.firestore.CollectionReference
+import com.google.firebase.firestore.FirebaseFirestore
 
 object FirebaseConfig {
 
-    private val database: FirebaseDatabase = FirebaseDatabase.getInstance()
+    private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
 
-    private val rootRef: DatabaseReference =
-        database.getReference("nightingale_hospital")
+    val usersRef: CollectionReference = firestore.collection("users")
 
-    val usersRef = rootRef.child("users")
+    val doctorsRef: CollectionReference = firestore.collection("doctors")
 
-    val doctorsRef = rootRef.child("doctors")
+    val patientsRef: CollectionReference = firestore.collection("patients")
 
-    val patientsRef = rootRef.child("patients")
+    val departmentsRef: CollectionReference = firestore.collection("departments")
 
-    val departmentsRef = rootRef.child("departments")
+    val bedsRef: CollectionReference = firestore.collection("beds")
 
-    val bedsRef = rootRef.child("beds")
+    val operationTheatresRef: CollectionReference = firestore.collection("operation_theatres")
 
-    val operationTheatresRef = rootRef.child("operation_theatres")
+    val appointmentsRef: CollectionReference = firestore.collection("appointments")
 
-    val appointmentsRef = rootRef.child("appointments")
+    val prescriptionsRef: CollectionReference = firestore.collection("prescriptions")
 
-    val prescriptionsRef = rootRef.child("prescriptions")
+    val medicinesRef: CollectionReference = firestore.collection("medicines")
 
-    val medicinesRef = rootRef.child("medicines")
+    val testBookingsRef: CollectionReference = firestore.collection("test_bookings")
 
-    val testBookingsRef = rootRef.child("test_bookings")
+    val testResultsRef: CollectionReference = firestore.collection("test_results")
 
-    val testResultsRef = rootRef.child("test_results")
+    val surgeryBookingsRef: CollectionReference = firestore.collection("surgery_bookings")
 
-    val surgeryBookingsRef = rootRef.child("surgery_bookings")
+    val notificationsRef: CollectionReference = firestore.collection("notifications")
 
-    val notificationsRef = rootRef.child("notifications")
-
-    val admissionsRef = rootRef.child("admissions")
+    val admissionsRef: CollectionReference = firestore.collection("admissions")
 
 }

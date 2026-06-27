@@ -7,13 +7,13 @@ class AdmissionRepository {
 
     fun admitPatient(admission: Admission) {
 
-        val id = FirebaseConfig.admissionsRef.push().key
+        val id = FirebaseConfig.admissionsRef.document().id
             ?: throw Exception("Failed to generate admission ID")
 
         val updatedAdmission = admission.copy(id = id)
 
         FirebaseConfig.admissionsRef
-            .child(id)
-            .setValue(updatedAdmission)
+            .document(id)
+            .set(updatedAdmission)
     }
 }

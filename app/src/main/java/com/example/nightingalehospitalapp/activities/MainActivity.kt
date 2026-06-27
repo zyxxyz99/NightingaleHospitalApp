@@ -2,7 +2,6 @@ package com.example.nightingalehospitalapp.activities
 
 import android.content.Intent
 import android.os.Bundle
-import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,9 +18,6 @@ import com.example.nightingalehospitalapp.doctor.DoctorDashboardActivity
 import com.example.nightingalehospitalapp.patient.PatientDashboardActivity
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -68,36 +64,33 @@ fun MainScreen(
 
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
-            FirebaseConfig.usersRef.child(currentUser.uid)
-                .addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                            val role = snapshot.child("role").getValue(String::class.java)
-                            val approved = snapshot.child("approved").getValue(Boolean::class.java)
+            FirebaseConfig.usersRef.document(currentUser.uid).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        val role = document.getString("role")
+                        val approved = document.getBoolean("approved")
 
-                            if (role == "DOCTOR" && approved == false) {
-                                // Doctor not approved yet, sign out and show login
-                                auth.signOut()
-                                isLoading = false
-                            } else {
-                                when (role) {
-                                    "ADMIN" -> onNavigateToAdmin()
-                                    "DOCTOR" -> onNavigateToDoctor()
-                                    "PATIENT" -> onNavigateToPatient()
-                                    else -> isLoading = false
-                                }
-                            }
-                        } else {
+                        if (role == "DOCTOR" && approved == false) {
+                            // Doctor not approved yet, sign out and show login
                             auth.signOut()
                             isLoading = false
+                        } else {
+                            when (role) {
+                                "ADMIN" -> onNavigateToAdmin()
+                                "DOCTOR" -> onNavigateToDoctor()
+                                "PATIENT" -> onNavigateToPatient()
+                                else -> isLoading = false
+                            }
                         }
-                    }
-
-                    override fun onCancelled(error: DatabaseError) {
+                    } else {
                         auth.signOut()
                         isLoading = false
                     }
-                })
+                }
+                .addOnFailureListener {
+                    auth.signOut()
+                    isLoading = false
+                }
         } else {
             isLoading = false
         }

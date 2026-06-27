@@ -30,9 +30,6 @@ import com.example.nightingalehospitalapp.activities.ProfileActivity
 import com.example.nightingalehospitalapp.database.FirebaseConfig
 import com.example.nightingalehospitalapp.ui.theme.NightingaleHospitalAppTheme
 import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
 
 class PatientDashboardActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -57,18 +54,15 @@ fun PatientDashboardScreen() {
 
     LaunchedEffect(currentUser) {
         if (currentUser != null) {
-            FirebaseConfig.usersRef.child(currentUser.uid)
-                .addListenerForSingleValueEvent(object : ValueEventListener {
-                    override fun onDataChange(snapshot: DataSnapshot) {
-                        if (snapshot.exists()) {
-                            userName = snapshot.child("name").getValue(String::class.java) ?: "Patient"
-                        }
+            FirebaseConfig.usersRef.document(currentUser.uid).get()
+                .addOnSuccessListener { document ->
+                    if (document.exists()) {
+                        userName = document.getString("name") ?: "Patient"
                     }
-
-                    override fun onCancelled(error: DatabaseError) {
-                        // Handle error
-                    }
-                })
+                }
+                .addOnFailureListener {
+                    // Handle error
+                }
         }
     }
 

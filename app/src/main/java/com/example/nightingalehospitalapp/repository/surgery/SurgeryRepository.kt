@@ -7,13 +7,13 @@ class SurgeryRepository {
 
     fun bookSurgery(surgery: SurgeryBooking) {
 
-        val id = FirebaseConfig.surgeryBookingsRef.push().key
+        val id = FirebaseConfig.surgeryBookingsRef.document().id
             ?: throw Exception("Failed to generate surgery ID")
 
         val updatedSurgery = surgery.copy(surgeryId = id)
 
         FirebaseConfig.surgeryBookingsRef
-            .child(id)
-            .setValue(updatedSurgery)
+            .document(id)
+            .set(updatedSurgery)
     }
 }

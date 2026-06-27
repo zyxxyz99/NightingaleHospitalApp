@@ -7,13 +7,13 @@ class AppointmentRepository {
 
     fun bookAppointment(appointment: Appointment) {
 
-        val id = FirebaseConfig.appointmentsRef.push().key
+        val id = FirebaseConfig.appointmentsRef.document().id
             ?: throw Exception("Failed to generate appointment ID")
 
         val updatedAppointment = appointment.copy(appointmentId = id)
 
         FirebaseConfig.appointmentsRef
-            .child(id)
-            .setValue(updatedAppointment)
+            .document(id)
+            .set(updatedAppointment)
     }
 }
