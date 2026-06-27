@@ -5,7 +5,6 @@ import com.example.nightingalehospitalapp.models.diagnostic.DiagnosticTest
 import com.example.nightingalehospitalapp.models.diagnostic.TestBooking
 import com.example.nightingalehospitalapp.models.diagnostic.TestResult
 import com.example.nightingalehospitalapp.models.enums.TestStatus
-import com.example.nightingalehospitalapp.models.diagnostic.TestResult
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.channels.awaitClose
